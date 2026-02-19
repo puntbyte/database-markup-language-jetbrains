@@ -10,6 +10,7 @@ import com.intellij.psi.ResolveResult
 import com.puntbyte.dbml.core.DbmlIcon
 import com.puntbyte.dbml.util.DbmlUtil
 
+
 class DbmlPartialReference(element: PsiElement, textRange: TextRange) :
   PsiReferenceBase<PsiElement>(element, textRange), PsiPolyVariantReference {
 
