@@ -1,0 +1,156 @@
+{
+  parserClass="com.puntbyte.dbml.parser.DbmlParser"
+  extends="com.intellij.extapi.psi.ASTWrapperPsiElement"
+
+  psiClassPrefix="Dbml"
+  psiImplClassSuffix="Impl"
+  psiPackage="com.puntbyte.dbml.psi"
+  psiImplPackage="com.puntbyte.dbml.psi.impl"
+  psiImplUtilClass="com.puntbyte.dbml.psi.impl.DbmlPsiImplUtil"
+
+  elementTypeHolderClass="com.puntbyte.dbml.psi.DbmlTypes"
+  elementTypeClass="com.puntbyte.dbml.psi.DbmlElementType"
+  tokenTypeClass="com.puntbyte.dbml.psi.DbmlElementType"
+
+  tokens=[
+    // Structural
+    L_BRACE='{' R_BRACE='}' L_BRACKET='[' R_BRACKET=']' L_PAREN='(' R_PAREN=')'
+    COLON=':' DOT='.' COMMA=',' TILDE='~'
+
+    // Operators
+    OP_ONE_MANY='<' OP_MANY_ONE='>' OP_ONE_ONE='-' OP_MANY_MANY='<>'
+
+    // Keywords (We list them here so generated DbmlTypes has them)
+    KW_TABLE KW_GROUP KW_PARTIAL KW_PROJECT KW_REF KW_ENUM
+    KW_NOTE KW_INDEXES KW_CHECKS KW_AS
+
+    // Data
+    BOOLEAN NUMBER STRING MULTI_STRING COLOR NULL
+    EXPRESSION IDENTIFIER
+
+    // Contextual tokens (from Lexer)
+    DATA_TYPE SETTING_KEY SETTING_VAL
+
+    // Comments
+    LINE_COMMENT BLOCK_COMMENT DOC_COMMENT
+  ]
+}
+
+DbmlFile ::= TopLevelItem*
+
+private TopLevelItem ::=
+    ProjectDefinition
+  | EnumDefinition
+  | TableDefinition
+  | ReferenceDefinition
+  | GroupDefinition
+  | PartialDefinition
+  | StickyNoteDefinition
+  | Comment
+
+// ---- 1. PROJECT ----
+// We use KW_PROJECT token, we don't care if it was "Project" or "project"
+ProjectDefinition ::= KW_PROJECT id? ProjectBlock
+ProjectBlock ::= L_BRACE ProjectContent* (NoteDefinition)? R_BRACE
+ProjectContent ::= MapEntry | Comment
+
+// ---- 2. ENUM ----
+EnumDefinition ::= KW_ENUM NamespaceIdentifier EnumBlock
+EnumBlock ::= L_BRACE EnumValue* R_BRACE
+EnumValue ::= (id | STRING) SettingBlock?
+
+// ---- 3. TABLE ----
+TableDefinition ::= KW_TABLE TableIdentifier AliasClause? SettingBlock? TableBlock {
+   implements="com.intellij.psi.PsiNameIdentifierOwner"
+   methods=[getName setName getNameIdentifier]
+}
+TableIdentifier ::= NamespaceIdentifier
+TableBlock ::= L_BRACE TableContent* R_BRACE
+private TableContent ::=
+    ColumnDefinition
+  | PartialInjection
+  | IndexDefinition
+  | CheckDefinition
+  | NoteDefinition
+  | MapEntry
+  | Comment
+
+AliasClause ::= KW_AS id
+
+// ---- 4. PARTIAL ----
+PartialDefinition ::= KW_PARTIAL id SettingBlock? PartialBlock {
+    implements="com.intellij.psi.PsiNameIdentifierOwner"
+    methods=[getName setName getNameIdentifier]
+}
+PartialBlock ::= L_BRACE PartialContent* R_BRACE
+private PartialContent ::= ColumnDefinition | IndexDefinition | NoteDefinition | Comment
+PartialInjection ::= TILDE id
+
+// ---- 5. COLUMN ----
+// logic: name type [settings]
+ColumnDefinition ::= ColumnIdentifier ColumnType SettingBlock?
+ColumnIdentifier ::= id
+ColumnType ::= id (L_PAREN DataLimit R_PAREN)?
+DataLimit ::= NUMBER (COMMA NUMBER)?
+
+// ---- 6. INDEXES ----
+IndexDefinition ::= KW_INDEXES IndexBlock
+IndexBlock ::= L_BRACE IndexItem* R_BRACE
+IndexItem ::= IndexExpression SettingBlock?
+IndexExpression ::=
+    NamespaceIdentifier
+  | L_PAREN NamespaceIdentifier (COMMA NamespaceIdentifier)* R_PAREN
+  | EXPRESSION
+
+// ---- 7. CHECKS ----
+CheckDefinition ::= KW_CHECKS CheckBlock
+CheckBlock ::= L_BRACE CheckItem* R_BRACE
+CheckItem ::= EXPRESSION SettingBlock?
+
+// ---- 8. NOTES ----
+StickyNoteDefinition ::= KW_NOTE id? NoteBlock
+NoteDefinition ::= KW_NOTE NoteBlock
+NoteBlock ::= L_BRACE (STRING | MULTI_STRING) R_BRACE
+
+// ---- 9. REFS ----
+ReferenceDefinition ::= LongReference | ShortReference
+private LongReference ::= KW_REF id? ReferenceBlock
+ReferenceBlock ::= L_BRACE ReferenceExpression R_BRACE
+private ShortReference ::= KW_REF id? COLON ReferenceExpression
+
+ReferenceExpression ::= ReferenceEndpoint RelationOperator ReferenceEndpoint SettingBlock?
+ReferenceEndpoint ::= NamespaceIdentifier | CompositeReference
+CompositeReference ::= L_PAREN NamespaceIdentifier (COMMA NamespaceIdentifier)* R_PAREN
+
+// ---- 10. GROUPS ----
+GroupDefinition ::= KW_GROUP id SettingBlock? GroupBlock
+GroupBlock ::= L_BRACE GroupContent* R_BRACE
+GroupContent ::= id | NoteDefinition | Comment
+
+// ---- 11. SETTINGS ----
+SettingBlock ::= L_BRACKET SettingList R_BRACKET
+SettingList ::= SettingContent (COMMA SettingContent)*
+SettingContent ::= MapEntry | id | Comment
+
+// ---- UTILS ----
+MapEntry ::= MapKey COLON MapValue
+MapKey ::= id
+MapValue ::= BOOLEAN | NUMBER | STRING | COLOR | EXPRESSION | InlineRef | NULL | id
+
+InlineRef  ::= RelationOperator NamespaceIdentifier
+RelationOperator ::= OP_ONE_MANY | OP_MANY_ONE | OP_ONE_ONE | OP_MANY_MANY
+NamespaceIdentifier ::= id (DOT id)*
+
+// ---- THE MAGIC IDENTIFIER RULE ----
+// This allows you to name a table "Project", "int", "pk", or "Table"
+// It treats keywords as valid identifiers in contexts where a name is expected.
+id ::=
+    IDENTIFIER
+  | DATA_TYPE
+  | SETTING_KEY
+  | SETTING_VAL
+  | KW_TABLE | KW_GROUP | KW_PARTIAL | KW_PROJECT | KW_REF | KW_ENUM
+  | KW_NOTE | KW_INDEXES | KW_CHECKS | KW_AS
+  | BOOLEAN | NULL
+
+private Comment ::= LINE_COMMENT | DOC_COMMENT | BLOCK_COMMENT
