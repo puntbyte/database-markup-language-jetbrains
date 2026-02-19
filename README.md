@@ -1,117 +1,115 @@
-# IntelliJ Platform Plugin Template
+# Database Markup Language (DBML) for IntelliJ IDEA
 
-[![Twitter Follow](https://img.shields.io/badge/follow-%40JBPlatform-1DA1F2?logo=twitter)](https://twitter.com/JBPlatform)
-[![Developers Forum](https://img.shields.io/badge/JetBrains%20Platform-Join-blue)][jb:forum]
+![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
+![Version](https://img.shields.io/badge/version-1.0.0-blue)
+![Platform](https://img.shields.io/badge/platform-IntelliJ-pink)
 
-## Plugin template structure
+A robust IntelliJ IDEA plugin that provides first-class support for **[DBML](https://dbdiagram.io/d)** (Database Markup
+Language).
 
-A generated project contains the following content structure:
+This plugin helps developers design database schemas visually and textually by providing syntax highlighting, code
+formatting, smart auto-completion, and navigation features for `.dbml` files.
 
+---
+
+## ✨ Features
+
+### 1. Syntax Highlighting & Parsing
+
+* Full tokenization of DBML keywords (`Table`, `Ref`, `Enum`, `Project`, etc.).
+* Distinct coloring for Data Types, Strings, Numbers, Comments, and Settings.
+* Support for single-line (`//`) and documentation (`///`) comments.
+
+### 2. Smart Auto-Completion
+
+* **Context-Aware:** Suggests standard SQL types (e.g., `int`, `varchar`, `boolean`) and DBML keywords.
+* **Dialect Support:** Automatically detects your project's database type to suggest specific data types (
+  see [Configuration](#configuration-database-dialects)).
+
+### 3. Code Formatting
+
+* Reformat code using the standard shortcut (`Ctrl + Alt + L` / `Cmd + Opt + L`).
+* Handles indentation for nested blocks (`Table`, `Enum`, `Group`).
+* Aligns braces and manages spacing around operators (`<`, `>`, `-`).
+
+### 4. Navigation & References
+
+* **Go to Definition:** `Ctrl + Click` (or `Cmd + Click`) on a table name in a `Ref:` block to jump to the Table
+  definition.
+* **Partial Injection:** Support for resolving partial references (files included via `~`).
+
+### 5. Editor Enhancements
+
+* **Brace Matching:** Highlights matching `{ }`, `[ ]`, and `( )`.
+* **Quote Handling:** Auto-closes quotes for strings.
+* **Commenter:** Standard `Ctrl + /` support to toggle comments.
+
+---
+
+## 🛠 Configuration: Database Dialects
+
+This plugin supports specific data type suggestions based on your target database.
+
+To enable **PostgreSQL** specific auto-completion (e.g., `jsonb`, `uuid`, `timestamptz`, `serial`), define the
+`database_type` inside a `Project` block in your `.dbml` file:
+
+```dbml
+Project my_project_name {
+  database_type: 'PostgreSQL'
+  Note: 'Description of the project'
+}
+
+Table users {
+  id integer [pk, increment]
+  // 'jsonb' will now appear in auto-complete suggestions
+  metadata jsonb 
+  created_at timestamptz
+}
 ```
-.
-├── .run/                   Predefined Run/Debug Configurations
-├── build/                  Output build directory
-├── gradle
-│   ├── wrapper/            Gradle Wrapper
-├── src                     Plugin sources
-│   ├── main
-│   │   ├── kotlin/         Kotlin production sources
-│   │   └── resources/      Resources - plugin.xml, icons, messages
-├── .gitignore              Git ignoring rules
-├── build.gradle.kts        Gradle build configuration
-├── gradle.properties       Gradle configuration properties
-├── gradlew                 *nix Gradle Wrapper script
-├── gradlew.bat             Windows Gradle Wrapper script
-├── README.md               README
-└── settings.gradle.kts     Gradle project settings
-```
 
-In addition to the configuration files, the most crucial part is the `src` directory, which contains our implementation
-and the manifest for our plugin – [plugin.xml][file:plugin.xml].
+*Supported Dialects:*
 
-> [!NOTE]
-> To use Java in your plugin, create the `/src/main/java` directory.
+* `'PostgreSQL'` / `'Postgres'`
+* `'MySQL'` (Generic support)
+* *Default:* Standard SQL types
 
-## Plugin configuration file
+---
 
-The plugin configuration file is a [plugin.xml][file:plugin.xml] file located in the `src/main/resources/META-INF`
-directory.
-It provides general information about the plugin, its dependencies, extensions, and listeners.
+## 📥 Installation
 
-You can read more about this file in the [Plugin Configuration File][docs:plugin.xml] section of our documentation.
+### Method 1: Install from Disk (Development)
 
-If you're still not quite sure what this is all about, read our
-introduction: [What is the IntelliJ Platform?][docs:intro]
+1. Clone this repository.
+2. Run the Gradle build command:
+   ```bash
+   ./gradlew buildPlugin
+   ```
+3. Locate the generated ZIP file in `build/distributions/`.
+4. Open IntelliJ IDEA settings: `Settings/Preferences` -> `Plugins` -> `⚙️` -> `Install Plugin from Disk...`.
+5. Select the ZIP file and restart the IDE.
 
-$H$H Predefined Run/Debug configurations
+### Method 2: JetBrains Marketplace
 
-Within the default project structure, there is a `.run` directory provided containing predefined *Run/Debug
-configurations* that expose corresponding Gradle tasks:
+*(Once published)*
 
-| Configuration name | Description                                                                                                                                                                         |
-|--------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Run Plugin         | Runs [`:runIde`][gh:intellij-platform-gradle-plugin-runIde] IntelliJ Platform Gradle Plugin task. Use the *Debug* icon for plugin debugging.                                        |
-| Run Tests          | Runs [`:test`][gradle:lifecycle-tasks] Gradle task.                                                                                                                                 |
-| Run Verifications  | Runs [`:verifyPlugin`][gh:intellij-platform-gradle-plugin-verifyPlugin] IntelliJ Platform Gradle Plugin task to check the plugin compatibility against the specified IntelliJ IDEs. |
+1. Open `Settings/Preferences` -> `Plugins`.
+2. Search for **"Database Markup Language"**.
+3. Click **Install**.
 
-> [!NOTE]
-> You can find the logs from the running task in the `idea.log` tab.
+---
 
-## Publishing the plugin
+## 🤝 Contributing
 
-> [!TIP]
-> Make sure to follow all guidelines listed in [Publishing a Plugin][docs:publishing] to follow all recommended and
-> required steps.
+Contributions are welcome! Please follow these steps:
 
-Releasing a plugin to [JetBrains Marketplace](https://plugins.jetbrains.com) is a straightforward operation that uses
-the `publishPlugin` Gradle task provided by
-the [intellij-platform-gradle-plugin][gh:intellij-platform-gradle-plugin-docs].
+1. Fork the repository.
+2. Create a feature branch (`git checkout -b feature/NewFeature`).
+3. Commit your changes.
+4. Push to the branch.
+5. Open a Pull Request.
 
-You can also upload the plugin to the [JetBrains Plugin Repository](https://plugins.jetbrains.com/plugin/upload)
-manually via UI.
+---
 
-## Useful links
+## 📄 License
 
-- [IntelliJ Platform SDK Plugin SDK][docs]
-- [IntelliJ Platform Gradle Plugin Documentation][gh:intellij-platform-gradle-plugin-docs]
-- [IntelliJ Platform Explorer][jb:ipe]
-- [JetBrains Marketplace Quality Guidelines][jb:quality-guidelines]
-- [IntelliJ Platform UI Guidelines][jb:ui-guidelines]
-- [JetBrains Marketplace Paid Plugins][jb:paid-plugins]
-- [IntelliJ SDK Code Samples][gh:code-samples]
-
-[docs]: https://plugins.jetbrains.com/docs/intellij
-
-[docs:intro]: https://plugins.jetbrains.com/docs/intellij/intellij-platform.html?from=IJPluginTemplate
-
-[docs:plugin.xml]: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html?from=IJPluginTemplate
-
-[docs:publishing]: https://plugins.jetbrains.com/docs/intellij/publishing-plugin.html?from=IJPluginTemplate
-
-[file:plugin.xml]: ./src/main/resources/META-INF/plugin.xml
-
-[gh:code-samples]: https://github.com/JetBrains/intellij-sdk-code-samples
-
-[gh:intellij-platform-gradle-plugin]: https://github.com/JetBrains/intellij-platform-gradle-plugin
-
-[gh:intellij-platform-gradle-plugin-docs]: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin.html
-
-[gh:intellij-platform-gradle-plugin-runIde]: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-tasks.html#runIde
-
-[gh:intellij-platform-gradle-plugin-verifyPlugin]: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-tasks.html#verifyPlugin
-
-[gradle:lifecycle-tasks]: https://docs.gradle.org/current/userguide/java_plugin.html#lifecycle_tasks
-
-[jb:github]: https://github.com/JetBrains/.github/blob/main/profile/README.md
-
-[jb:forum]: https://platform.jetbrains.com/
-
-[jb:quality-guidelines]: https://plugins.jetbrains.com/docs/marketplace/quality-guidelines.html
-
-[jb:paid-plugins]: https://plugins.jetbrains.com/docs/marketplace/paid-plugins-marketplace.html
-
-[jb:quality-guidelines]: https://plugins.jetbrains.com/docs/marketplace/quality-guidelines.html
-
-[jb:ipe]: https://jb.gg/ipe
-
-[jb:ui-guidelines]: https://jetbrains.github.io/ui
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
