@@ -20,7 +20,7 @@ WHITE_SPACE=[\ \n\t\f]
 
 // Values
 BOOLEAN=(true|false)
-NUMBER=[0-9]+(\.[0-9]+)?
+NUMBER=\-?[0-9]+(\.[0-9]+)?
 STRING='([^'\\]|\\.)*'
 MULTI_STRING=\'\'\'([^\']|\'([^\']|\'[^\']))*\'\'\'
 COLOR="#"[a-fA-F0-9]{3,6}
@@ -112,7 +112,7 @@ BLOCK_COMMENT="/*"([^*]|\*+[^*/])*(\*+"/")?
   "type" |
   "delete" | "update"        { return DbmlTypes.SETTING_KEY; }
 
-  "cascade" | "restrict"     { return DbmlTypes.SETTING_VAL; }
+  "cascade" | "restrict" | "set null" | "set default" | "no action"     { return DbmlTypes.SETTING_VAL; }
 
   {IDENTIFIER}               { return DbmlTypes.IDENTIFIER; }
   {QUOTED_ID}                { return DbmlTypes.IDENTIFIER; }

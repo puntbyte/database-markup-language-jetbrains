@@ -72,6 +72,7 @@ private TableContent ::=
   | IndexDefinition
   | CheckDefinition
   | NoteDefinition
+  | ReferenceDefinition
   | MapEntry
   | Comment
 
@@ -108,7 +109,7 @@ CheckBlock ::= L_BRACE CheckItem* R_BRACE
 CheckItem ::= EXPRESSION SettingBlock?
 
 // ---- 8. NOTES ----
-StickyNoteDefinition ::= KW_NOTE id? NoteBlock
+StickyNoteDefinition ::= KW_NOTE id? SettingBlock? NoteBlock
 NoteDefinition ::= KW_NOTE NoteBlock
 NoteBlock ::= L_BRACE (STRING | MULTI_STRING) R_BRACE
 
@@ -119,13 +120,13 @@ ReferenceBlock ::= L_BRACE ReferenceExpression R_BRACE
 private ShortReference ::= KW_REF id? COLON ReferenceExpression
 
 ReferenceExpression ::= ReferenceEndpoint RelationOperator ReferenceEndpoint SettingBlock?
-ReferenceEndpoint ::= NamespaceIdentifier | CompositeReference
-CompositeReference ::= L_PAREN NamespaceIdentifier (COMMA NamespaceIdentifier)* R_PAREN
+ReferenceEndpoint ::= CompositeReference | NamespaceIdentifier
+CompositeReference ::= NamespaceIdentifier DOT L_PAREN id R_PAREN
 
 // ---- 10. GROUPS ----
 GroupDefinition ::= KW_GROUP id SettingBlock? GroupBlock
 GroupBlock ::= L_BRACE GroupContent* R_BRACE
-GroupContent ::= id | NoteDefinition | Comment
+GroupContent ::= NamespaceIdentifier | NoteDefinition | Comment
 
 // ---- 11. SETTINGS ----
 SettingBlock ::= L_BRACKET SettingList R_BRACKET
@@ -135,7 +136,7 @@ SettingContent ::= MapEntry | id | Comment
 // ---- UTILS ----
 MapEntry ::= MapKey COLON MapValue
 MapKey ::= id
-MapValue ::= BOOLEAN | NUMBER | STRING | COLOR | EXPRESSION | InlineRef | NULL | id
+MapValue ::= BOOLEAN | NUMBER | STRING | MULTI_STRING | COLOR | EXPRESSION | InlineRef | NULL | id
 
 InlineRef  ::= RelationOperator NamespaceIdentifier
 RelationOperator ::= OP_ONE_MANY | OP_MANY_ONE | OP_ONE_ONE | OP_MANY_MANY
