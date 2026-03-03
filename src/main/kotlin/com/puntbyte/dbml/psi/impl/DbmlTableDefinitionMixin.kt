@@ -29,4 +29,9 @@ abstract class DbmlTableDefinitionMixin : StubBasedPsiElementBase<DbmlTableStub>
   override fun getNameIdentifier(): PsiElement? {
     return DbmlPsiImplUtil.getNameIdentifier(this)
   }
+
+  override fun getTextOffset(): Int {
+    // Tells the IDE exactly where the 'name' is located for Refactoring & Usages
+    return nameIdentifier?.textOffset ?: super.getTextOffset()
+  }
 }

@@ -91,14 +91,16 @@ object DbmlUtil {
    * the 'database_type' setting.
    * Example: Project my_project { database_type: 'PostgreSQL' }
    */
-  /*fun getProjectDatabaseType(project: Project): String? {
+  fun getProjectDatabaseType(project: Project): String? {
     val virtualFiles = FileTypeIndex.getFiles(DbmlFileType, GlobalSearchScope.allScope(project))
     for (virtualFile in virtualFiles) {
       val file = PsiManager.getInstance(project).findFile(virtualFile) as? DbmlFile ?: continue
       val projectDef = PsiTreeUtil.findChildOfType(file, DbmlProjectDefinition::class.java) ?: continue
       val projectBlock = PsiTreeUtil.findChildOfType(projectDef, DbmlProjectBlock::class.java) ?: continue
 
-      val mapEntries = PsiTreeUtil.getChildrenOfType(projectBlock, DbmlMapEntry::class.java) ?: continue
+      // FIX: Use collectElementsOfType to search deeply into the block
+      val mapEntries = PsiTreeUtil.collectElementsOfType(projectBlock, DbmlMapEntry::class.java)
+
       for (entry in mapEntries) {
         if (entry.mapKey.text == "database_type") {
           return entry.mapValue.text.replace("'", "").replace("\"", "").trim()
@@ -106,10 +108,10 @@ object DbmlUtil {
       }
     }
     return null
-  }*/
+  }
 
 
-  fun getProjectDatabaseType(file: PsiFile): String? {
+  /*fun getProjectDatabaseType(file: PsiFile): String? {
     // 1. Find the Project Definition Block
     val projectDef = PsiTreeUtil.findChildOfType(file, DbmlProjectDefinition::class.java)
       ?: return null
@@ -133,5 +135,5 @@ object DbmlUtil {
       }
     }
     return null
-  }
+  }*/
 }

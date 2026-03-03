@@ -21,7 +21,9 @@ class DbmlFoldingBuilder : FoldingBuilderEx() {
         type == DbmlTypes.ENUM_BLOCK ||
         type == DbmlTypes.PROJECT_BLOCK ||
         type == DbmlTypes.NOTE_BLOCK ||
-        type == DbmlTypes.GROUP_BLOCK) {
+        type == DbmlTypes.GROUP_BLOCK ||
+        type == DbmlTypes.INDEX_BLOCK ||   // <-- ADD THIS
+        type == DbmlTypes.CHECK_BLOCK) {   // <-- ADD THIS
 
         val range = element.textRange
         if (range.length > 2) {

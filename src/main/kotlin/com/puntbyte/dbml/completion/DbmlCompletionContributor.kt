@@ -22,7 +22,7 @@ class DbmlCompletionContributor : CompletionContributor() {
           val file = parameters.originalFile
 
           // 1. Detect Database Type from Project Settings
-          val dbType = DbmlUtil.getProjectDatabaseType(file)
+          val dbType = DbmlUtil.getProjectDatabaseType(file.project)
 
           // 2. Get contextual types
           val typesToSuggest = DbmlDialects.getDataTypes(dbType)

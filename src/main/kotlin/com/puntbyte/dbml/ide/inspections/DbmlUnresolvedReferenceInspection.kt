@@ -32,7 +32,7 @@ class DbmlUnresolvedReferenceInspection : LocalInspectionTool() {
       override fun visitColumnType(o: DbmlColumnType) {
         super.visitColumnType(o)
         val typeName = o.id.text
-        val dbType = DbmlUtil.getProjectDatabaseType(o.containingFile)
+        val dbType = DbmlUtil.getProjectDatabaseType(o.project)
         val standardTypes = DbmlDialects.getDataTypes(dbType)
 
         // If it's not a standard DB type like 'int' or 'varchar', it's an Enum reference!
