@@ -28,20 +28,10 @@ class DbmlTableReference(element: PsiElement, textRange: TextRange) :
   override fun multiResolve(incompleteCode: Boolean): Array<ResolveResult> {
     val project = myElement.project
 
-    // 1. Get all tables in the project
-    val tables = DbmlUtil.findTables(project)
+    // O(1) Instant Lookup instead of parsing the whole project!
+    val matches = DbmlUtil.findTableByName(project, key)
 
-    // 2. Filter matches
-    val results = tables.filter { table ->
-      // safe access to .name via DbmlPsiImplUtil
-      val tableName = table.name
-
-      // Check for exact match
-      // (Optional: You could add logic here to check aliases too if you implement alias parsing)
-      tableName == key
-    }
-
-    return results.map { PsiElementResolveResult(it) }.toTypedArray()
+    return matches.map { PsiElementResolveResult(it) }.toTypedArray()
   }
 
   // Provides Auto-Complete suggestions

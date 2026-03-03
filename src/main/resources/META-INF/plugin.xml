@@ -1,60 +1,114 @@
 <!-- Plugin Configuration File: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
 <idea-plugin>
-	<!-- Unique identifier of the plugin. It should be FQN, cannot be changed between the plugin versions. -->
-	<id>com.puntbyte.database-markup-language-jetbrains</id>
-	
-	<!-- Public plugin name should be written in Title Case.
-		 Guidelines: https://plugins.jetbrains.com/docs/marketplace/best-practices-for-listing.html#plugin-name -->
-	<name>Database Markup Language</name>
-	
-	<!-- A displayed Vendor name or Organization ID displayed on the Plugins Page. -->
-	<vendor url="https://www.puntbyte.com">Puntbyte</vendor>
-	
-	<!-- Description of the plugin displayed on the Plugin Page and IDE Plugin Manager.
-		 Guidelines: https://plugins.jetbrains.com/docs/marketplace/best-practices-for-listing.html#plugin-description -->
-	<description><![CDATA[
+  <!-- Unique identifier of the plugin. It should be FQN, cannot be changed between the plugin versions. -->
+  <id>com.puntbyte.database-markup-language-jetbrains</id>
+
+  <!-- Public plugin name should be written in Title Case.
+     Guidelines: https://plugins.jetbrains.com/docs/marketplace/best-practices-for-listing.html#plugin-name -->
+  <name>Database Markup Language</name>
+
+  <!-- A displayed Vendor name or Organization ID displayed on the Plugins Page. -->
+  <vendor url="https://www.puntbyte.com">Puntbyte</vendor>
+
+  <!-- Description of the plugin displayed on the Plugin Page and IDE Plugin Manager.
+     Guidelines: https://plugins.jetbrains.com/docs/marketplace/best-practices-for-listing.html#plugin-description -->
+  <description><![CDATA[
         Database Markup Language (DBML) is a language for describing database schemas.
     ]]></description>
-	
-	<!-- Product and plugin compatibility requirements.
-		 Read more: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
-	<depends>com.intellij.modules.platform</depends>
-	
-	<!-- Extensions defined by the plugin.
-		 Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
-	<extensions defaultExtensionNs="com.intellij">
-		<fileType name="Database Markup Language"
-		          implementationClass="com.puntbyte.dbml.core.DbmlFileType"
-		          fieldName="INSTANCE"
-		          language="DBML"
-		          extensions="dbml"/>
-		
-		<!-- Register the Parser -->
-		<lang.parserDefinition language="DBML"
-		                       implementationClass="com.puntbyte.dbml.parser.DbmlParserDefinition"/>
-		
-		<!-- Register the Syntax Highlighter -->
-		<lang.syntaxHighlighterFactory language="DBML"
-		                               implementationClass="com.puntbyte.dbml.highlight.DbmlSyntaxHighlighterFactory"/>
-		
-		<!-- Register the Annotator -->
-		<annotator language="DBML" implementationClass="com.puntbyte.dbml.highlight.DbmlAnnotator"/>
-		
-		<!-- 1. Code Completion -->
-		<completion.contributor language="DBML"
-		                        implementationClass="com.puntbyte.dbml.completion.DbmlCompletionContributor"/>
-		
-		<!-- 2. Go To Definition (References) -->
-		<psi.referenceContributor language="DBML"
-		                          implementation="com.puntbyte.dbml.reference.DbmlReferenceContributor"/>
-		
-		<!-- 1. Auto-Close Brackets -->
-		<lang.braceMatcher language="DBML" implementationClass="com.puntbyte.dbml.ide.DbmlBraceMatcher"/>
-		
-		<!-- 2. Auto-Close Quotes -->
-		<lang.quoteHandler language="DBML" implementationClass="com.puntbyte.dbml.ide.DbmlQuoteHandler"/>
-		
-		<!-- 3. Formatter -->
-		<lang.formatter language="DBML" implementationClass="com.puntbyte.dbml.ide.formatter.DbmlFormattingModelBuilder"/>
-	</extensions>
+
+  <!-- Product and plugin compatibility requirements.
+     Read more: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
+  <depends>com.intellij.modules.platform</depends>
+
+  <!-- Extensions defined by the plugin.
+     Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
+  <extensions defaultExtensionNs="com.intellij">
+    <fileType name="Database Markup Language"
+              implementationClass="com.puntbyte.dbml.core.DbmlFileType"
+              fieldName="INSTANCE"
+              language="DBML"
+              extensions="dbml"/>
+
+    <!-- Register the Parser -->
+    <lang.parserDefinition language="DBML"
+                           implementationClass="com.puntbyte.dbml.parser.DbmlParserDefinition"/>
+
+    <!-- Register the Syntax Highlighter -->
+    <lang.syntaxHighlighterFactory language="DBML"
+                                   implementationClass="com.puntbyte.dbml.highlight.DbmlSyntaxHighlighterFactory"/>
+
+    <!-- Register the Annotator -->
+    <annotator language="DBML" implementationClass="com.puntbyte.dbml.highlight.DbmlAnnotator"/>
+
+    <!-- 1. Code Completion -->
+    <completion.contributor language="DBML"
+                            implementationClass="com.puntbyte.dbml.completion.DbmlCompletionContributor"/>
+
+    <!-- 2. Go To Definition (References) -->
+    <psi.referenceContributor language="DBML"
+                              implementation="com.puntbyte.dbml.reference.DbmlReferenceContributor"/>
+
+    <!-- 1. Auto-Close Brackets -->
+    <lang.braceMatcher language="DBML"
+                       implementationClass="com.puntbyte.dbml.ide.DbmlBraceMatcher"/>
+
+    <!-- 2. Auto-Close Quotes -->
+    <lang.quoteHandler language="DBML"
+                       implementationClass="com.puntbyte.dbml.ide.DbmlQuoteHandler"/>
+
+    <!-- 3. Formatter -->
+    <lang.formatter language="DBML"
+                    implementationClass="com.puntbyte.dbml.ide.formatter.DbmlFormattingModelBuilder"/>
+
+    <stubIndex implementation="com.puntbyte.dbml.index.DbmlTableIndex"/>
+
+    <!-- 1. Breadcrumbs -->
+    <breadcrumbsInfoProvider implementation="com.puntbyte.dbml.ide.DbmlBreadcrumbsProvider"/>
+
+    <!-- 2. Structure View -->
+    <lang.psiStructureViewFactory language="DBML"
+                                  implementationClass="com.puntbyte.dbml.ide.structure.DbmlStructureViewFactory"/>
+
+    <!-- 3. Go To Symbol (Search Everywhere) -->
+    <gotoSymbolContributor implementation="com.puntbyte.dbml.ide.DbmlChooseByNameContributor"/>
+
+    <!-- 4. Quick Documentation -->
+    <lang.documentationProvider language="DBML"
+                                implementationClass="com.puntbyte.dbml.ide.DbmlDocumentationProvider"/>
+
+    <!-- Smart Inspections -->
+    <localInspection language="DBML"
+                     displayName="Unresolved DBML reference"
+                     groupPath="DBML"
+                     groupName="General"
+                     enabledByDefault="true"
+                     level="ERROR"
+                     implementationClass="com.puntbyte.dbml.ide.inspections.DbmlUnresolvedReferenceInspection"/>
+
+    <localInspection language="DBML"
+                     displayName="Duplicate DBML declaration"
+                     groupPath="DBML"
+                     groupName="General"
+                     enabledByDefault="true"
+                     level="ERROR"
+                     implementationClass="com.puntbyte.dbml.ide.inspections.DbmlDuplicateDeclarationInspection"/>
+
+    <!-- Refactoring & Usages -->
+    <lang.refactoringSupport language="DBML"
+                             implementationClass="com.puntbyte.dbml.ide.refactor.DbmlRefactoringSupportProvider"/>
+    <lang.findUsagesProvider language="DBML"
+                             implementationClass="com.puntbyte.dbml.ide.refactor.DbmlFindUsagesProvider"/>
+
+    <!-- Code Folding -->
+    <lang.foldingBuilder language="DBML"
+                         implementationClass="com.puntbyte.dbml.ide.folding.DbmlFoldingBuilder"/>
+
+    <!-- Live Templates -->
+    <defaultLiveTemplatesProvider
+        implementation="com.puntbyte.dbml.ide.templates.DbmlLiveTemplatesProvider"/>
+    <defaultLiveTemplates file="liveTemplates/Dbml.xml"/>
+    <liveTemplateContext implementation="com.puntbyte.dbml.ide.templates.DbmlTemplateContextType"
+                         contextId="com.puntbyte.dbml.ide.templates.DbmlTemplateContextType"/>
+
+  </extensions>
 </idea-plugin>

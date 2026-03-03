@@ -4,6 +4,8 @@ import com.intellij.openapi.fileTypes.LanguageFileType
 import javax.swing.Icon
 
 object DbmlFileType : LanguageFileType(DbmlLanguage) {
+  val INSTANCE = this
+
   override fun getName() = "Database Markup Language"
   override fun getDescription() =
     "Database Markup Language (DBML) is a language for describing database schemas."

@@ -1,7 +1,12 @@
 package com.puntbyte.dbml.psi.impl
 
 import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiManager
 import com.intellij.psi.util.PsiTreeUtil
+import com.intellij.testFramework.LightVirtualFile
+import com.puntbyte.dbml.core.DbmlFileType
+import com.puntbyte.dbml.psi.DbmlElementFactory
+import com.puntbyte.dbml.psi.DbmlFile
 import com.puntbyte.dbml.psi.DbmlId
 import com.puntbyte.dbml.psi.DbmlPartialDefinition
 import com.puntbyte.dbml.psi.DbmlTableDefinition
@@ -15,20 +20,21 @@ object DbmlPsiImplUtil {
 
   @JvmStatic
   fun getNameIdentifier(element: DbmlTableDefinition): PsiElement? {
-    // Find the 'id' wrapper node
-    val idNode = PsiTreeUtil.findChildOfType(element, DbmlId::class.java)
-    // Return the actual leaf identifier inside it
-    return idNode?.firstChild
+    // Return the entire TableIdentifier (which includes the schema and the dot)
+    return element.tableIdentifier
   }
 
   @JvmStatic
   fun getName(element: DbmlTableDefinition): String? {
-    return getNameIdentifier(element)?.text
+    // Return the full text: "blog.posts"
+    return element.tableIdentifier.text
   }
 
   @JvmStatic
-  fun setName(element: DbmlTableDefinition, newName: String): PsiElement {
-    // Rename logic (omitted for brevity, returns element as is)
+  fun setName(element: DbmlTableDefinition, name: String): PsiElement {
+    val identifierNode = element.nameIdentifier ?: return element
+    val newIdentifierNode = DbmlElementFactory.createIdentifier(element.project, name)
+    identifierNode.replace(newIdentifierNode)
     return element
   }
 
@@ -49,7 +55,10 @@ object DbmlPsiImplUtil {
   }
 
   @JvmStatic
-  fun setName(element: DbmlPartialDefinition, newName: String): PsiElement {
+  fun setName(element: DbmlPartialDefinition, name: String): PsiElement {
+    val identifierNode = element.nameIdentifier ?: return element
+    val newIdentifierNode = DbmlElementFactory.createIdentifier(element.project, name)
+    identifierNode.replace(newIdentifierNode)
     return element
   }
 }
