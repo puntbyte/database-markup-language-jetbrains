@@ -62,7 +62,9 @@ EnumValue ::= (id | STRING) SettingBlock?
 // ---- 3. TABLE ----
 TableDefinition ::= KW_TABLE TableIdentifier AliasClause? SettingBlock? TableBlock {
    implements="com.intellij.psi.PsiNameIdentifierOwner"
-   methods=[getName setName getNameIdentifier]
+   mixin="com.puntbyte.dbml.psi.impl.DbmlTableDefinitionMixin"
+   stubClass="com.puntbyte.dbml.psi.stubs.DbmlTableStub"
+   elementTypeFactory="com.puntbyte.dbml.psi.stubs.DbmlStubTypes.getFactory"
 }
 TableIdentifier ::= NamespaceIdentifier
 TableBlock ::= L_BRACE TableContent* R_BRACE
@@ -110,6 +112,7 @@ CheckItem ::= EXPRESSION SettingBlock?
 
 // ---- 8. NOTES ----
 StickyNoteDefinition ::= KW_NOTE id? SettingBlock? NoteBlock
+
 NoteDefinition ::= KW_NOTE NoteBlock
 NoteBlock ::= L_BRACE (STRING | MULTI_STRING) R_BRACE
 

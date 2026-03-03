@@ -12,6 +12,7 @@ import com.puntbyte.dbml.psi.DbmlTypes;
 %unicode
 %function advance
 %type IElementType
+%ignorecase
 %eof{  return;
 %eof}
 
