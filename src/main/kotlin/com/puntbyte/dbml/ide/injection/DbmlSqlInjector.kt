@@ -16,16 +16,27 @@ class DbmlSqlInjector : MultiHostInjector {
       // Ensure it's wrapped in backticks
       if (text.length >= 2 && text.startsWith("`") && text.endsWith("`")) {
 
-        // Try to find the SQL language (fallback to PostgreSQL if available)
         val sqlLanguage = Language.findLanguageByID("PostgreSQL")
           ?: Language.findLanguageByID("SQL")
           ?: return
 
+        val innerText = text.substring(1, text.length - 1).trim()
+        val upperText = innerText.uppercase()
+
+        // Smart Prefixing:
+        // If the user wrote a full statement (e.g. `SELECT * FROM users`), don't add prefix.
+        // If it's just a function or expression (e.g. `now()`), wrap it in SELECT.
+        val isFullStatement = upperText.startsWith("SELECT") || upperText.startsWith("WITH")
+
+        val prefix = if (isFullStatement) null else "SELECT "
+        val suffix = if (isFullStatement) null else ";"
+
         registrar.startInjecting(sqlLanguage)
-        // Inject everything EXCEPT the two backticks (TextRange from 1 to length - 1)
+
+        // Add the prefix and suffix so the SQL parser evaluates it correctly!
         registrar.addPlace(
-          null,
-          null,
+          prefix,
+          suffix,
           context as PsiLanguageInjectionHost,
           TextRange(1, text.length - 1)
         )

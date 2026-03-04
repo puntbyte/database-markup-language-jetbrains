@@ -73,11 +73,10 @@ TableDefinition ::= TableKeyword TableIdentifierClause AliasClause? SettingBlock
    elementTypeFactory="com.puntbyte.dbml.psi.stubs.DbmlStubTypes.getFactory"
 }
 TableKeyword ::= KW_TABLE
-private TableIdentifierClause ::=  (SchemaIdentifier DOT TableIdentifier) | TableIdentifier
+private TableIdentifierClause ::= (SchemaIdentifier DOT TableIdentifier) | TableIdentifier
 TableIdentifier ::= Identifier
 TableBlock ::= L_BRACE TableContent* R_BRACE
-private TableContent ::=
-    ColumnDefinition
+private TableContent ::= ColumnDefinition
   | PartialReference
   | IndexDefinition
   | CheckDefinition
@@ -190,8 +189,7 @@ RelationOperator ::= OP_ONE_MANY | OP_MANY_ONE | OP_ONE_ONE | OP_MANY_MANY
 // ---- THE MAGIC IDENTIFIER RULE ----
 // This allows you to name a table "Project", "int", "pk", or "Table"
 // It treats keywords as valid identifiers in contexts where a name is expected.
-Identifier ::=
-    IDENTIFIER_TOKEN
+Identifier ::= IDENTIFIER_TOKEN
   | DATA_TYPE_TOKEN
   | SETTING_KEY
   | SETTING_VAL
