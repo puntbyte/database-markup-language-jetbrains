@@ -26,10 +26,10 @@
 
     // Data
     BOOLEAN NUMBER STRING MULTI_STRING COLOR NULL
-    EXPRESSION IDENTIFIER
+    EXPRESSION IDENTIFIER_TOKEN
 
     // Contextual tokens (from Lexer)
-    DATA_TYPE SETTING_KEY SETTING_VAL
+    DATA_TYPE_TOKEN SETTING_KEY SETTING_VAL
 
     // Comments
     LINE_COMMENT BLOCK_COMMENT DOC_COMMENT
@@ -38,8 +38,7 @@
 
 DbmlFile ::= TopLevelItem*
 
-private TopLevelItem ::=
-    ProjectDefinition
+private TopLevelItem ::= ProjectDefinition
   | EnumDefinition
   | TableDefinition
   | ReferenceDefinition
@@ -50,27 +49,36 @@ private TopLevelItem ::=
 
 // ---- 1. PROJECT ----
 // We use KW_PROJECT token, we don't care if it was "Project" or "project"
-ProjectDefinition ::= KW_PROJECT id? ProjectBlock
+ProjectDefinition ::= ProjectKeyword ProjectIdentifier? ProjectBlock
+ProjectKeyword ::= KW_PROJECT
+ProjectIdentifier ::= Identifier
 ProjectBlock ::= L_BRACE ProjectContent* (NoteDefinition)? R_BRACE
 ProjectContent ::= MapEntry | Comment
 
 // ---- 2. ENUM ----
-EnumDefinition ::= KW_ENUM NamespaceIdentifier EnumBlock
+EnumDefinition ::= EnumKeyword EnumIdentifierClause EnumBlock
+EnumKeyword ::= KW_ENUM
+private EnumIdentifierClause ::= (SchemaIdentifier DOT EnumIdentifier) | EnumIdentifier
+EnumIdentifier ::= Identifier
 EnumBlock ::= L_BRACE EnumValue* R_BRACE
-EnumValue ::= (id | STRING) SettingBlock?
+EnumValue ::= (Identifier | STRING) SettingBlock?
+
+SchemaIdentifier ::= Identifier
 
 // ---- 3. TABLE ----
-TableDefinition ::= KW_TABLE TableIdentifier AliasClause? SettingBlock? TableBlock {
+TableDefinition ::= TableKeyword TableIdentifierClause AliasClause? SettingBlock? TableBlock {
    implements="com.intellij.psi.PsiNameIdentifierOwner"
    mixin="com.puntbyte.dbml.psi.impl.DbmlTableDefinitionMixin"
    stubClass="com.puntbyte.dbml.psi.stubs.DbmlTableStub"
    elementTypeFactory="com.puntbyte.dbml.psi.stubs.DbmlStubTypes.getFactory"
 }
-TableIdentifier ::= NamespaceIdentifier
+TableKeyword ::= KW_TABLE
+private TableIdentifierClause ::=  (SchemaIdentifier DOT TableIdentifier) | TableIdentifier
+TableIdentifier ::= Identifier
 TableBlock ::= L_BRACE TableContent* R_BRACE
 private TableContent ::=
     ColumnDefinition
-  | PartialInjection
+  | PartialReference
   | IndexDefinition
   | CheckDefinition
   | NoteDefinition
@@ -78,79 +86,113 @@ private TableContent ::=
   | MapEntry
   | Comment
 
-AliasClause ::= KW_AS id
+AliasClause ::= AliasKeyword AliasIdentifier
+AliasKeyword ::= KW_AS
+AliasIdentifier ::= Identifier
 
 // ---- 4. PARTIAL ----
-PartialDefinition ::= KW_PARTIAL id SettingBlock? PartialBlock {
+PartialDefinition ::= PartialKeyword PartialIdentifier SettingBlock? PartialBlock {
     implements="com.intellij.psi.PsiNameIdentifierOwner"
     methods=[getName setName getNameIdentifier]
 }
+PartialKeyword ::= KW_PARTIAL
+PartialIdentifier ::= Identifier
 PartialBlock ::= L_BRACE PartialContent* R_BRACE
 private PartialContent ::= ColumnDefinition | IndexDefinition | NoteDefinition | Comment
-PartialInjection ::= TILDE id
+
+PartialReference ::= TILDE PartialIdentifier
 
 // ---- 5. COLUMN ----
 // logic: name type [settings]
 ColumnDefinition ::= ColumnIdentifier ColumnType SettingBlock?
-ColumnIdentifier ::= id
-ColumnType ::= id (L_PAREN DataLimit R_PAREN)?
+ColumnIdentifier ::= Identifier
+ColumnType ::= DataType (L_PAREN DataLimit R_PAREN)?
+
+DataType ::= Identifier
 DataLimit ::= NUMBER (COMMA NUMBER)?
 
 // ---- 6. INDEXES ----
-IndexDefinition ::= KW_INDEXES IndexBlock
+IndexDefinition ::= IndexKeyword IndexBlock
+IndexKeyword ::= KW_INDEXES
 IndexBlock ::= L_BRACE IndexItem* R_BRACE
 IndexItem ::= IndexExpression SettingBlock?
-IndexExpression ::=
-    NamespaceIdentifier
-  | L_PAREN NamespaceIdentifier (COMMA NamespaceIdentifier)* R_PAREN
-  | EXPRESSION
+IndexExpression ::= ColumnIdentifier | L_PAREN ColumnList R_PAREN | ExpressionWrapper
 
 // ---- 7. CHECKS ----
-CheckDefinition ::= KW_CHECKS CheckBlock
+CheckDefinition ::= CheckKeyword CheckBlock
+CheckKeyword ::= KW_CHECKS
 CheckBlock ::= L_BRACE CheckItem* R_BRACE
-CheckItem ::= EXPRESSION SettingBlock?
+CheckItem ::= ExpressionWrapper SettingBlock?
 
 // ---- 8. NOTES ----
-StickyNoteDefinition ::= KW_NOTE id? SettingBlock? NoteBlock
+StickyNoteDefinition ::= NoteKeyword StickyNoteIdentifier? SettingBlock? NoteBlock
+StickyNoteIdentifier ::= Identifier?
 
-NoteDefinition ::= KW_NOTE NoteBlock
+NoteDefinition ::= NoteKeyword NoteBlock
+NoteKeyword ::= KW_NOTE
 NoteBlock ::= L_BRACE (STRING | MULTI_STRING) R_BRACE
 
 // ---- 9. REFS ----
-ReferenceDefinition ::= LongReference | ShortReference
-private LongReference ::= KW_REF id? ReferenceBlock
+ReferenceDefinition ::= ReferenceKeyword ReferenceIdentifier? ReferenceContent
+ReferenceKeyword ::= KW_REF
+ReferenceIdentifier ::= Identifier
+ReferenceContent ::= ReferenceBlock | (COLON ReferenceExpression)
 ReferenceBlock ::= L_BRACE ReferenceExpression R_BRACE
-private ShortReference ::= KW_REF id? COLON ReferenceExpression
 
-ReferenceExpression ::= ReferenceEndpoint RelationOperator ReferenceEndpoint SettingBlock?
-ReferenceEndpoint ::= CompositeReference | NamespaceIdentifier
-CompositeReference ::= NamespaceIdentifier DOT L_PAREN id R_PAREN
+ReferenceExpression ::= ColumnReference RelationOperator ColumnReference SettingBlock?
 
 // ---- 10. GROUPS ----
-GroupDefinition ::= KW_GROUP id SettingBlock? GroupBlock
+GroupDefinition ::= GroupKeyword GroupIdentifier SettingBlock? GroupBlock
+GroupKeyword ::= KW_GROUP
+GroupIdentifier ::= Identifier
 GroupBlock ::= L_BRACE GroupContent* R_BRACE
-GroupContent ::= NamespaceIdentifier | NoteDefinition | Comment
+GroupContent ::= TableIdentifierClause | NoteDefinition | Comment
 
 // ---- 11. SETTINGS ----
 SettingBlock ::= L_BRACKET SettingList R_BRACKET
 SettingList ::= SettingContent (COMMA SettingContent)*
-SettingContent ::= MapEntry | id | Comment
+SettingContent ::= MapEntry | Identifier | Comment
 
 // ---- UTILS ----
 MapEntry ::= MapKey COLON MapValue
-MapKey ::= id
-MapValue ::= BOOLEAN | NUMBER | STRING | MULTI_STRING | COLOR | EXPRESSION | InlineRef | NULL | id
+MapKey ::= Identifier
+MapValue ::= BOOLEAN
+  | NUMBER
+  | STRING
+  | MULTI_STRING
+  | COLOR
+  | ExpressionWrapper
+  | InlineReference
+  | NULL
+  | Identifier
 
-InlineRef  ::= RelationOperator NamespaceIdentifier
+ExpressionWrapper ::= EXPRESSION {
+    implements="com.intellij.psi.PsiLanguageInjectionHost"
+    mixin="com.puntbyte.dbml.psi.impl.DbmlExpressionMixin"
+}
+
+InlineReference  ::= RelationOperator SimpleColumnReference
+
+ColumnReference ::= SimpleColumnReference | CompositeColumnReference
+
+
+SimpleColumnReference ::= SchemaIdentifier DOT TableIdentifier DOT ColumnIdentifier
+                        | TableIdentifier DOT ColumnIdentifier
+
+CompositeColumnReference ::= SchemaIdentifier DOT TableIdentifier DOT CompositeColumn
+                           | TableIdentifier DOT CompositeColumn
+
+CompositeColumn ::= L_PAREN ColumnList R_PAREN
+private ColumnList ::= ColumnIdentifier (COMMA ColumnIdentifier)*
+
 RelationOperator ::= OP_ONE_MANY | OP_MANY_ONE | OP_ONE_ONE | OP_MANY_MANY
-NamespaceIdentifier ::= id (DOT id)*
 
 // ---- THE MAGIC IDENTIFIER RULE ----
 // This allows you to name a table "Project", "int", "pk", or "Table"
 // It treats keywords as valid identifiers in contexts where a name is expected.
-id ::=
-    IDENTIFIER
-  | DATA_TYPE
+Identifier ::=
+    IDENTIFIER_TOKEN
+  | DATA_TYPE_TOKEN
   | SETTING_KEY
   | SETTING_VAL
   | KW_TABLE | KW_GROUP | KW_PARTIAL | KW_PROJECT | KW_REF | KW_ENUM

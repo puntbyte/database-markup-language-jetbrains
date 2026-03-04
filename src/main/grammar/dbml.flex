@@ -100,7 +100,7 @@ BLOCK_COMMENT="/*"([^*]|\*+[^*/])*(\*+"/")?
   "timestamp" | "timestamptz" | "date" | "datetime" | "time" |
   "decimal" | "numeric" | "float" | "double" | "real" |
   "json" | "jsonb" | "xml" |
-  "blob" | "binary" | "varbinary" | "uuid"          { return DbmlTypes.DATA_TYPE; }
+  "blob" | "binary" | "varbinary" | "uuid"          { return DbmlTypes.DATA_TYPE_TOKEN; }
 
   // Settings
   "pk" | "primary key" |
@@ -115,8 +115,8 @@ BLOCK_COMMENT="/*"([^*]|\*+[^*/])*(\*+"/")?
 
   "cascade" | "restrict" | "set null" | "set default" | "no action"     { return DbmlTypes.SETTING_VAL; }
 
-  {IDENTIFIER}               { return DbmlTypes.IDENTIFIER; }
-  {QUOTED_ID}                { return DbmlTypes.IDENTIFIER; }
+  {IDENTIFIER}               { return DbmlTypes.IDENTIFIER_TOKEN; }
+  {QUOTED_ID}                { return DbmlTypes.IDENTIFIER_TOKEN; }
 
   {WHITE_SPACE}              { return TokenType.WHITE_SPACE; }
 }
