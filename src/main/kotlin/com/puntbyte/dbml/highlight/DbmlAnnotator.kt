@@ -11,40 +11,36 @@ import com.puntbyte.dbml.psi.*
 class DbmlAnnotator : Annotator {
   override fun annotate(element: PsiElement, holder: AnnotationHolder) {
 
-    // 1. Highlight Table Names (Definitions)
-    // If 'Table' or 'Project' keywords are used as names, this recolors them properly.
-    if (element.parent is DbmlTableIdentifier) {
+    // 1. Highlight standard definitions (Tables, Partials, Enums, Projects)
+    if (element is DbmlTableIdentifier || element is DbmlEnumIdentifier ||
+      element is DbmlPartialIdentifier || element is DbmlProjectIdentifier ||
+      element is DbmlGroupIdentifier
+    ) {
       applyColor(holder, element, DefaultLanguageHighlighterColors.CLASS_NAME)
-      return
     }
 
-    // 2. Highlight Column Names
-    if (element.parent is DbmlColumnIdentifier) {
-      // This is CRITICAL: If the column is named "int" or "Table",
-      // the Lexer colored it as Keyword/Type. We force it to look like a Field.
+    // 2. Highlight Columns
+    if (element is DbmlColumnIdentifier) {
       applyColor(holder, element, DefaultLanguageHighlighterColors.INSTANCE_FIELD)
-      return
     }
 
-    // 3. Highlight Column Types (Strictly the ID part)
-    // We check if the current element is an 'ID' node, AND its parent is 'ColumnType'
-    if (element is DbmlId && element.parent is DbmlColumnType) {
+    // 3. Highlight DataTypes inside Column Definitions
+    if (element is DbmlDataType) {
       applyColor(holder, element, DefaultLanguageHighlighterColors.FUNCTION_CALL)
-      return
     }
 
-    // 4. Highlight Settings Map Keys (e.g., 'pk', 'note' inside [])
-    // Covers: [pk] AND [note: 'value']
-    if (element.parent is DbmlMapKey) {
+    // 4. Highlight Settings Map Keys
+    if (element is DbmlMapKey) {
       applyColor(holder, element, DefaultLanguageHighlighterColors.METADATA)
-      return
     }
 
-    // 5. Highlight Refs (Endpoints)
-    // e.g. users.id in `Ref: users.id < posts.id`
-    if (element.parent is DbmlNamespaceIdentifier && element.parent.parent is DbmlReferenceEndpoint) {
-      applyColor(holder, element, DefaultLanguageHighlighterColors.FUNCTION_DECLARATION)
-      return
+    // 5. Schema Identifier
+    if (element is DbmlSchemaIdentifier) {
+      applyColor(
+        holder,
+        element,
+        DefaultLanguageHighlighterColors.KEYWORD
+      ) // Or however you want Schemas styled
     }
   }
 

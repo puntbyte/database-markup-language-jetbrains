@@ -76,6 +76,13 @@
     <lang.documentationProvider language="DBML"
                                 implementationClass="com.puntbyte.dbml.ide.DbmlDocumentationProvider"/>
 
+    <!-- Phase 5: Formatting & Comments -->
+    <lang.commenter language="DBML" implementationClass="com.puntbyte.dbml.ide.DbmlCommenter"/>
+    <langCodeStyleSettingsProvider implementation="com.puntbyte.dbml.ide.formatter.DbmlLanguageCodeStyleSettingsProvider"/>
+
+    <!-- Phase 6: Language Injections -->
+    <multiHostInjector implementation="com.puntbyte.dbml.ide.injection.DbmlSqlInjector"/>
+
     <!-- Smart Inspections -->
     <localInspection language="DBML"
                      displayName="Unresolved DBML reference"

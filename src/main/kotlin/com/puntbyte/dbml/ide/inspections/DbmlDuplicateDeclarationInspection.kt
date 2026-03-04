@@ -21,7 +21,7 @@ class DbmlDuplicateDeclarationInspection : LocalInspectionTool() {
 
         if (projects.size > 1) {
           // Highlight the word "Project" or its ID
-          val target = o.id ?: o.firstChild
+          val target = o.projectIdentifier ?: o.firstChild
           holder.registerProblem(
             target,
             "Only one Project definition is allowed per file",
@@ -46,19 +46,37 @@ class DbmlDuplicateDeclarationInspection : LocalInspectionTool() {
 
       // --- 3. ENUMS, GROUPS, PARTIALS, NOTES (File-wide checks) ---
       override fun visitEnumDefinition(o: DbmlEnumDefinition) {
-        checkDuplicateInFile(o, o.namespaceIdentifier?.text, DbmlEnumDefinition::class.java, "Enum", holder)
+        checkDuplicateInFile(
+          o,
+          o.enumIdentifier.text,
+          DbmlEnumDefinition::class.java,
+          "Enum",
+          holder
+        )
       }
 
       override fun visitGroupDefinition(o: DbmlGroupDefinition) {
-        checkDuplicateInFile(o, o.id?.text, DbmlGroupDefinition::class.java, "Group", holder)
+        checkDuplicateInFile(
+          o,
+          o.groupIdentifier.text,
+          DbmlGroupDefinition::class.java,
+          "Group",
+          holder
+        )
       }
 
       override fun visitPartialDefinition(o: DbmlPartialDefinition) {
-        checkDuplicateInFile(o, o.id?.text, DbmlPartialDefinition::class.java, "Partial", holder)
+        checkDuplicateInFile(
+          o,
+          o.partialIdentifier.text,
+          DbmlPartialDefinition::class.java,
+          "Partial",
+          holder
+        )
       }
 
       override fun visitStickyNoteDefinition(o: DbmlStickyNoteDefinition) {
-        val noteName = o.id?.text ?: return // Unnamed notes are perfectly fine
+        val noteName = o.stickyNoteIdentifier?.text ?: return // Unnamed notes are perfectly fine
         checkDuplicateInFile(o, noteName, DbmlStickyNoteDefinition::class.java, "Note", holder)
       }
     }
@@ -94,20 +112,20 @@ class DbmlDuplicateDeclarationInspection : LocalInspectionTool() {
 
   private fun getElementName(element: PsiElement): String? {
     return when (element) {
-      is DbmlEnumDefinition -> element.namespaceIdentifier?.text
-      is DbmlGroupDefinition -> element.id?.text
-      is DbmlPartialDefinition -> element.id?.text
-      is DbmlStickyNoteDefinition -> element.id?.text
+      is DbmlEnumDefinition -> element.enumIdentifier.text
+      is DbmlGroupDefinition -> element.groupIdentifier.text
+      is DbmlPartialDefinition -> element.partialIdentifier.text
+      is DbmlStickyNoteDefinition -> element.stickyNoteIdentifier?.text
       else -> null
     }
   }
 
   private fun getNameNode(element: PsiElement): PsiElement? {
     return when (element) {
-      is DbmlEnumDefinition -> element.namespaceIdentifier
-      is DbmlGroupDefinition -> element.id
-      is DbmlPartialDefinition -> element.id
-      is DbmlStickyNoteDefinition -> element.id
+      is DbmlEnumDefinition -> element.enumIdentifier
+      is DbmlGroupDefinition -> element.groupIdentifier
+      is DbmlPartialDefinition -> element.partialIdentifier
+      is DbmlStickyNoteDefinition -> element.stickyNoteIdentifier
       else -> null
     }
   }

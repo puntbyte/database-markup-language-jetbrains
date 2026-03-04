@@ -8,6 +8,8 @@ import com.intellij.psi.PsiPolyVariantReference
 import com.intellij.psi.PsiReferenceBase
 import com.intellij.psi.ResolveResult
 import com.puntbyte.dbml.core.DbmlIcon
+import com.puntbyte.dbml.psi.DbmlElementFactory
+import com.puntbyte.dbml.psi.DbmlTableIdentifier
 import com.puntbyte.dbml.util.DbmlUtil
 
 class DbmlTableReference(element: PsiElement, textRange: TextRange) :
@@ -51,5 +53,12 @@ class DbmlTableReference(element: PsiElement, textRange: TextRange) :
         null
       }
     }.toTypedArray()
+  }
+
+  override fun handleElementRename(newElementName: String): PsiElement {
+    val idElement = myElement as? DbmlTableIdentifier ?: return myElement
+    val newId = DbmlElementFactory.createTableIdentifier(idElement.project, newElementName)
+    idElement.replace(newId)
+    return myElement
   }
 }
