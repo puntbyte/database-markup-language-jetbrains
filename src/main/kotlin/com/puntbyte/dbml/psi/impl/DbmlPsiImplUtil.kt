@@ -15,11 +15,8 @@ object DbmlPsiImplUtil {
 
   @JvmStatic
   fun getName(element: DbmlTableDefinition): String? {
-    // SchemaIdentifier already includes the DOT in your BNF (e.g. "public.")
-    val schema = element.schemaIdentifier?.text ?: ""
-    val table = element.tableIdentifier?.text ?: ""
-    if (table.isEmpty()) return null
-    return schema + table
+    // TableIdentifier gives us 1 or 2 IDs (e.g. [commerce, categories] or [users])
+    return element.tableIdentifier?.text
   }
 
   @JvmStatic

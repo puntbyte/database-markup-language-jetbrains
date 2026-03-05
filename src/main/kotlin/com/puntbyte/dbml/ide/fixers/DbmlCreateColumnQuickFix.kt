@@ -24,7 +24,7 @@ class DbmlCreateColumnQuickFix(
 
     // We find the closing '}' of the table block
     val block = table.tableBlock
-    val insertOffset = block.textRange.endOffset - 1
+    val insertOffset = block?.textRange?.endOffset?.minus(1) ?: return
 
     val template = "  $columnName $inferredType\n"
 

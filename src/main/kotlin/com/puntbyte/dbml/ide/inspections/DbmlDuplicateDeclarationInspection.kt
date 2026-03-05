@@ -20,8 +20,7 @@ class DbmlDuplicateDeclarationInspection : LocalInspectionTool() {
         val projects = PsiTreeUtil.getChildrenOfTypeAsList(file, DbmlProjectDefinition::class.java)
 
         if (projects.size > 1) {
-          // Highlight the word "Project" or its ID
-          val target = o.projectIdentifier ?: o.firstChild
+          val target = o.identifier ?: o.firstChild
           holder.registerProblem(
             target,
             "Only one Project definition is allowed per file",
@@ -46,45 +45,24 @@ class DbmlDuplicateDeclarationInspection : LocalInspectionTool() {
 
       // --- 3. ENUMS, GROUPS, PARTIALS, NOTES (File-wide checks) ---
       override fun visitEnumDefinition(o: DbmlEnumDefinition) {
-        checkDuplicateInFile(
-          o,
-          o.enumIdentifier.text,
-          DbmlEnumDefinition::class.java,
-          "Enum",
-          holder
-        )
+        checkDuplicateInFile(o, o.enumIdentifier?.text, DbmlEnumDefinition::class.java, "Enum", holder)
       }
 
       override fun visitGroupDefinition(o: DbmlGroupDefinition) {
-        checkDuplicateInFile(
-          o,
-          o.groupIdentifier.text,
-          DbmlGroupDefinition::class.java,
-          "Group",
-          holder
-        )
+        checkDuplicateInFile(o, o.identifier?.text, DbmlGroupDefinition::class.java, "Group", holder)
       }
 
       override fun visitPartialDefinition(o: DbmlPartialDefinition) {
-        checkDuplicateInFile(
-          o,
-          o.partialIdentifier.text,
-          DbmlPartialDefinition::class.java,
-          "Partial",
-          holder
-        )
+        checkDuplicateInFile(o, o.partialIdentifier?.text, DbmlPartialDefinition::class.java, "Partial", holder)
       }
 
       override fun visitStickyNoteDefinition(o: DbmlStickyNoteDefinition) {
-        val noteName = o.stickyNoteIdentifier?.text ?: return // Unnamed notes are perfectly fine
+        val noteName = o.identifier?.text ?: return
         checkDuplicateInFile(o, noteName, DbmlStickyNoteDefinition::class.java, "Note", holder)
       }
     }
   }
 
-  /**
-   * Helper function to scan the current file for duplicate elements of the same type and name.
-   */
   private fun <T : PsiElement> checkDuplicateInFile(
     element: T,
     name: String?,
@@ -93,11 +71,7 @@ class DbmlDuplicateDeclarationInspection : LocalInspectionTool() {
     holder: ProblemsHolder
   ) {
     if (name == null) return
-
-    val file = element.containingFile
-    val elements = PsiTreeUtil.getChildrenOfTypeAsList(file, clazz)
-
-    // Count how many elements of this type have the exact same name
+    val elements = PsiTreeUtil.getChildrenOfTypeAsList(element.containingFile, clazz)
     val count = elements.count { getElementName(it) == name }
 
     if (count > 1) {
@@ -105,28 +79,24 @@ class DbmlDuplicateDeclarationInspection : LocalInspectionTool() {
       holder.registerProblem(
         targetToHighlight,
         "Duplicate $typeName definition: '$name'",
-        ProblemHighlightType.GENERIC_ERROR // Red squiggly line
+        ProblemHighlightType.GENERIC_ERROR
       )
     }
   }
 
-  private fun getElementName(element: PsiElement): String? {
-    return when (element) {
-      is DbmlEnumDefinition -> element.enumIdentifier.text
-      is DbmlGroupDefinition -> element.groupIdentifier.text
-      is DbmlPartialDefinition -> element.partialIdentifier.text
-      is DbmlStickyNoteDefinition -> element.stickyNoteIdentifier?.text
-      else -> null
-    }
+  private fun getElementName(element: PsiElement): String? = when (element) {
+    is DbmlEnumDefinition -> element.enumIdentifier?.text
+    is DbmlGroupDefinition -> element.identifier?.text
+    is DbmlPartialDefinition -> element.partialIdentifier?.text
+    is DbmlStickyNoteDefinition -> element.identifier?.text
+    else -> null
   }
 
-  private fun getNameNode(element: PsiElement): PsiElement? {
-    return when (element) {
-      is DbmlEnumDefinition -> element.enumIdentifier
-      is DbmlGroupDefinition -> element.groupIdentifier
-      is DbmlPartialDefinition -> element.partialIdentifier
-      is DbmlStickyNoteDefinition -> element.stickyNoteIdentifier
-      else -> null
-    }
+  private fun getNameNode(element: PsiElement): PsiElement? = when (element) {
+    is DbmlEnumDefinition -> element.enumIdentifier
+    is DbmlGroupDefinition -> element.identifier
+    is DbmlPartialDefinition -> element.partialIdentifier
+    is DbmlStickyNoteDefinition -> element.identifier
+    else -> null
   }
 }
