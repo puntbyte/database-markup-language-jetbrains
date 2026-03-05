@@ -20,7 +20,7 @@
     // Operators
     OP_ONE_MANY='<' OP_MANY_ONE='>' OP_ONE_ONE='-' OP_MANY_MANY='<>'
 
-    // Keywords (We list them here so generated DbmlTypes has them)
+    // Keywords
     KW_TABLE KW_GROUP KW_PARTIAL KW_PROJECT KW_REF KW_ENUM
     KW_NOTE KW_INDEXES KW_CHECKS KW_AS
 
@@ -46,114 +46,131 @@ private TopLevelItem ::= ProjectDefinition
   | PartialDefinition
   | StickyNoteDefinition
   | Comment
+  { recoverWhile=TopLevelRecover }
+
+private TopLevelRecover ::= !(KW_TABLE | KW_ENUM | KW_PROJECT | KW_REF | KW_GROUP | KW_PARTIAL | KW_NOTE)
 
 // ---- 1. PROJECT ----
-// We use KW_PROJECT token, we don't care if it was "Project" or "project"
-ProjectDefinition ::= ProjectKeyword ProjectIdentifier? ProjectBlock
+ProjectDefinition ::= ProjectKeyword Identifier? ProjectBlock { pin=1 }
 ProjectKeyword ::= KW_PROJECT
-ProjectIdentifier ::= Identifier
-ProjectBlock ::= L_BRACE ProjectContent* (NoteDefinition)? R_BRACE
+ProjectBlock ::= L_BRACE ProjectContent* (NoteDefinition)? R_BRACE { pin=1 }
 ProjectContent ::= MapEntry | Comment
 
-// ---- 2. ENUM ----
-EnumDefinition ::= EnumKeyword EnumIdentifierClause EnumBlock
-EnumKeyword ::= KW_ENUM
-private EnumIdentifierClause ::= (SchemaIdentifier DOT EnumIdentifier) | EnumIdentifier
-EnumIdentifier ::= Identifier
-EnumBlock ::= L_BRACE EnumValue* R_BRACE
-EnumValue ::= (Identifier | STRING) SettingBlock?
 
-SchemaIdentifier ::= Identifier
+// ---- 2. ENUM ----
+EnumDefinition ::= EnumKeyword EnumIdentifier EnumBlock { pin=1 }
+EnumKeyword ::= KW_ENUM
+EnumIdentifier ::= Identifier (DOT Identifier)?
+EnumBlock ::= L_BRACE EnumValue* R_BRACE { pin=1 }
+EnumValue ::= (Identifier | STRING) SettingBlock? { recoverWhile=EnumRecover }
+private EnumRecover ::= !(R_BRACE | IDENTIFIER_TOKEN | STRING)
+
 
 // ---- 3. TABLE ----
-TableDefinition ::= TableKeyword TableIdentifierClause AliasClause? SettingBlock? TableBlock {
+TableDefinition ::= TableKeyword TableIdentifier AliasClause? SettingBlock? TableBlock {
+   pin=1
    implements="com.intellij.psi.PsiNameIdentifierOwner"
    mixin="com.puntbyte.dbml.psi.impl.DbmlTableDefinitionMixin"
    stubClass="com.puntbyte.dbml.psi.stubs.DbmlTableStub"
    elementTypeFactory="com.puntbyte.dbml.psi.stubs.DbmlStubTypes.getFactory"
 }
 TableKeyword ::= KW_TABLE
-private TableIdentifierClause ::= (SchemaIdentifier DOT TableIdentifier) | TableIdentifier
-TableIdentifier ::= Identifier
-TableBlock ::= L_BRACE TableContent* R_BRACE
-private TableContent ::= ColumnDefinition
-  | PartialReference
-  | IndexDefinition
+TableIdentifier ::= Identifier (DOT Identifier)?
+TableBlock ::= L_BRACE TableContent* R_BRACE { pin=1 }
+
+private TableContent ::=
+    IndexDefinition
   | CheckDefinition
   | NoteDefinition
   | ReferenceDefinition
+  | PartialReference
   | MapEntry
+  | ColumnDefinition
   | Comment
+  { recoverWhile=TableContentRecover }
 
-AliasClause ::= AliasKeyword AliasIdentifier
+// Ensures recovery doesn't skip column names like 'name' or 'type'
+private TableContentRecover ::= !(R_BRACE | IDENTIFIER_TOKEN | DATA_TYPE_TOKEN | SETTING_KEY | SETTING_VAL | KW_NOTE | KW_REF | KW_INDEXES | KW_CHECKS | TILDE)
+
+AliasClause ::= AliasKeyword Identifier
 AliasKeyword ::= KW_AS
-AliasIdentifier ::= Identifier
+
 
 // ---- 4. PARTIAL ----
 PartialDefinition ::= PartialKeyword PartialIdentifier SettingBlock? PartialBlock {
+    pin=1
     implements="com.intellij.psi.PsiNameIdentifierOwner"
     methods=[getName setName getNameIdentifier]
 }
 PartialKeyword ::= KW_PARTIAL
 PartialIdentifier ::= Identifier
-PartialBlock ::= L_BRACE PartialContent* R_BRACE
-private PartialContent ::= ColumnDefinition | IndexDefinition | NoteDefinition | Comment
+PartialBlock ::= L_BRACE PartialContent* R_BRACE { pin=1 }
+private PartialContent ::= IndexDefinition | NoteDefinition | ColumnDefinition | Comment { recoverWhile=TableContentRecover }
 
 PartialReference ::= TILDE PartialIdentifier
 
-// ---- 5. COLUMN ----
-// logic: name type [settings]
-ColumnDefinition ::= ColumnIdentifier ColumnType SettingBlock?
-ColumnIdentifier ::= Identifier
-ColumnType ::= DataType (L_PAREN DataLimit R_PAREN)?
 
+// ---- 5. COLUMN ----
+ColumnDefinition ::= Identifier ColumnType SettingBlock? { pin=1 }
+ColumnType ::= DataType (L_PAREN DataLimit R_PAREN)?
 DataType ::= Identifier
 DataLimit ::= NUMBER (COMMA NUMBER)?
 
+
 // ---- 6. INDEXES ----
-IndexDefinition ::= IndexKeyword IndexBlock
+IndexDefinition ::= IndexKeyword IndexBlock { pin=1 }
 IndexKeyword ::= KW_INDEXES
-IndexBlock ::= L_BRACE IndexItem* R_BRACE
-IndexItem ::= IndexExpression SettingBlock?
-IndexExpression ::= ColumnIdentifier | L_PAREN ColumnList R_PAREN | ExpressionWrapper
+IndexBlock ::= L_BRACE IndexItem* R_BRACE { pin=1 }
+IndexItem ::= IndexExpression SettingBlock? { recoverWhile=BlockItemRecover }
+IndexExpression ::= Identifier | L_PAREN ColumnList R_PAREN | ExpressionWrapper
+
 
 // ---- 7. CHECKS ----
-CheckDefinition ::= CheckKeyword CheckBlock
+CheckDefinition ::= CheckKeyword CheckBlock { pin=1 }
 CheckKeyword ::= KW_CHECKS
-CheckBlock ::= L_BRACE CheckItem* R_BRACE
-CheckItem ::= ExpressionWrapper SettingBlock?
+CheckBlock ::= L_BRACE CheckItem* R_BRACE { pin=1 }
+CheckItem ::= ExpressionWrapper SettingBlock? { recoverWhile=BlockItemRecover }
+
+private BlockItemRecover ::= !(R_BRACE | IDENTIFIER_TOKEN | EXPRESSION | L_PAREN)
+
 
 // ---- 8. NOTES ----
-StickyNoteDefinition ::= NoteKeyword StickyNoteIdentifier? SettingBlock? NoteBlock
-StickyNoteIdentifier ::= Identifier?
+StickyNoteDefinition ::= NoteKeyword Identifier? SettingBlock? NoteBlock { pin=1 }
 
-NoteDefinition ::= NoteKeyword NoteBlock
+NoteDefinition ::= NoteKeyword NoteDeclaration { pin=1 }
+private NoteDeclaration ::= NoteBlock | (COLON (STRING | MULTI_STRING))
 NoteKeyword ::= KW_NOTE
-NoteBlock ::= L_BRACE (STRING | MULTI_STRING) R_BRACE
+NoteBlock ::= L_BRACE (STRING | MULTI_STRING) R_BRACE { pin=1 }
+
 
 // ---- 9. REFS ----
-ReferenceDefinition ::= ReferenceKeyword ReferenceIdentifier? ReferenceContent
+ReferenceDefinition ::= ReferenceKeyword Identifier? ReferenceContent { pin=1 }
 ReferenceKeyword ::= KW_REF
-ReferenceIdentifier ::= Identifier
 ReferenceContent ::= ReferenceBlock | (COLON ReferenceExpression)
-ReferenceBlock ::= L_BRACE ReferenceExpression R_BRACE
+ReferenceBlock ::= L_BRACE ReferenceExpression R_BRACE { pin=1 }
 
 ReferenceExpression ::= ColumnReference RelationOperator ColumnReference SettingBlock?
 
+
 // ---- 10. GROUPS ----
-GroupDefinition ::= GroupKeyword GroupIdentifier SettingBlock? GroupBlock
+GroupDefinition ::= GroupKeyword Identifier SettingBlock? GroupBlock { pin=1 }
 GroupKeyword ::= KW_GROUP
-GroupIdentifier ::= Identifier
-GroupBlock ::= L_BRACE GroupContent* R_BRACE
-GroupContent ::= TableIdentifierClause | NoteDefinition | Comment
+GroupBlock ::= L_BRACE GroupContent* R_BRACE { pin=1 }
+GroupContent ::= TableIdentifier | NoteDefinition | Comment { recoverWhile=GroupContentRecover }
+
+private GroupContentRecover ::= !(R_BRACE | IDENTIFIER_TOKEN | KW_NOTE)
+
 
 // ---- 11. SETTINGS ----
-SettingBlock ::= L_BRACKET SettingList R_BRACKET
+SettingBlock ::= L_BRACKET SettingList R_BRACKET { pin=1 }
 SettingList ::= SettingContent (COMMA SettingContent)*
-SettingContent ::= MapEntry | Identifier | Comment
+SettingContent ::= MapEntry | Identifier | Comment { recoverWhile=SettingContentRecover }
+
+private SettingContentRecover ::= !(R_BRACKET | COMMA | IDENTIFIER_TOKEN | DATA_TYPE_TOKEN | SETTING_KEY | SETTING_VAL)
+
 
 // ---- UTILS ----
-MapEntry ::= MapKey COLON MapValue
+MapEntry ::= MapKey COLON MapValue { pin=2 }
 MapKey ::= Identifier
 MapValue ::= BOOLEAN
   | NUMBER
@@ -174,22 +191,18 @@ InlineReference  ::= RelationOperator SimpleColumnReference
 
 ColumnReference ::= SimpleColumnReference | CompositeColumnReference
 
-
-SimpleColumnReference ::= SchemaIdentifier DOT TableIdentifier DOT ColumnIdentifier
-                        | TableIdentifier DOT ColumnIdentifier
-
-CompositeColumnReference ::= SchemaIdentifier DOT TableIdentifier DOT CompositeColumn
-                           | TableIdentifier DOT CompositeColumn
+// Left-Factored References (Solves all predictive parsing crashes!)
+SimpleColumnReference ::= Identifier DOT Identifier (DOT Identifier)?
+CompositeColumnReference ::= Identifier (DOT Identifier)? DOT CompositeColumn
 
 CompositeColumn ::= L_PAREN ColumnList R_PAREN
-private ColumnList ::= ColumnIdentifier (COMMA ColumnIdentifier)*
+private ColumnList ::= Identifier (COMMA Identifier)*
 
 RelationOperator ::= OP_ONE_MANY | OP_MANY_ONE | OP_ONE_ONE | OP_MANY_MANY
 
 // ---- THE MAGIC IDENTIFIER RULE ----
-// This allows you to name a table "Project", "int", "pk", or "Table"
-// It treats keywords as valid identifiers in contexts where a name is expected.
-Identifier ::= IDENTIFIER_TOKEN
+Identifier ::=
+    IDENTIFIER_TOKEN
   | DATA_TYPE_TOKEN
   | SETTING_KEY
   | SETTING_VAL

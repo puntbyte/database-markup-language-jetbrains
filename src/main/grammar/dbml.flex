@@ -73,24 +73,21 @@ BLOCK_COMMENT="/*"([^*]|\*+[^*/])*(\*+"/")?
   {EXPRESSION}               { return DbmlTypes.EXPRESSION; }
 
   // Keywords (Case Insensitive logic handled here)
-  "Table" | "table" | "TABLE"                       { return DbmlTypes.KW_TABLE; }
+  "table"                      { return DbmlTypes.KW_TABLE; }
 
-  "TableGroup" | "tablegroup" | "TABLEGROUP" |
-  "Group" | "group" | "GROUP"                       { return DbmlTypes.KW_GROUP; }
+  "tablegroup" | "group"                    { return DbmlTypes.KW_GROUP; }
 
-  "TablePartial" | "tablepartial" | "TABLEPARTIAL" |
-  "Partial" | "partial" | "PARTIAL"                 { return DbmlTypes.KW_PARTIAL; }
+  "tablepartial" | "partial"                 { return DbmlTypes.KW_PARTIAL; }
 
-  "Project" | "project" | "PROJECT"                 { return DbmlTypes.KW_PROJECT; }
+  "project"                { return DbmlTypes.KW_PROJECT; }
 
-  "Ref" | "ref" | "REF" |
-  "Reference" | "reference" | "REFERENCE"           { return DbmlTypes.KW_REF; }
+  "ref" | "reference"          { return DbmlTypes.KW_REF; }
 
-  "Enum" | "enum" | "ENUM"                          { return DbmlTypes.KW_ENUM; }
-  "Note" | "note" | "NOTE"                          { return DbmlTypes.KW_NOTE; }
-  "Indexes" | "indexes" | "INDEXES"                 { return DbmlTypes.KW_INDEXES; }
-  "Checks" | "checks" | "CHECKS"                    { return DbmlTypes.KW_CHECKS; }
-  "As" | "as" | "AS"                                { return DbmlTypes.KW_AS; }
+  "enum"                        { return DbmlTypes.KW_ENUM; }
+  "note"                          { return DbmlTypes.KW_NOTE; }
+  "indexes"                { return DbmlTypes.KW_INDEXES; }
+  "checks"                    { return DbmlTypes.KW_CHECKS; }
+  "as"                                { return DbmlTypes.KW_AS; }
 
   // Data Types (For highlighting mainly, but Parser accepts ANY identifier as type)
   "int" | "integer" | "tinyint" | "smallint" | "bigint" |
