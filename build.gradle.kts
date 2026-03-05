@@ -25,9 +25,9 @@ val localIdePath = "C:\\Program Files\\JetBrains\\IntelliJ IDEA 2025.3.3"
 // Read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin.html
 dependencies {
   intellijPlatform {
-    //intellijIdea("2025.2.4")
+    intellijIdea("2025.2.4")
     // Use your local IDE installation instead of downloading one
-    local(localIdePath)
+    //local(localIdePath)
     testFramework(org.jetbrains.intellij.platform.gradle.TestFrameworkType.Platform)
 
     // Add plugin dependencies for compilation here:

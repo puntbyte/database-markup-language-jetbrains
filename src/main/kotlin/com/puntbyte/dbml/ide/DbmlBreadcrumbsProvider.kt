@@ -9,20 +9,22 @@ import com.puntbyte.dbml.psi.*
 class DbmlBreadcrumbsProvider : BreadcrumbsProvider {
   override fun getLanguages(): Array<Language> = arrayOf(DbmlLanguage)
 
-  // Tell JetBrains which elements should create a breadcrumb
   override fun acceptElement(element: PsiElement): Boolean {
     return element is DbmlTableDefinition ||
+        element is DbmlPartialDefinition ||
         element is DbmlColumnDefinition ||
         element is DbmlEnumDefinition ||
-        element is DbmlProjectDefinition
+        element is DbmlProjectDefinition ||
+        element is DbmlGroupDefinition
   }
 
-  // What text should the breadcrumb display?
   override fun getElementInfo(element: PsiElement): String {
     return when (element) {
       is DbmlTableDefinition -> element.name ?: "Unnamed Table"
-      is DbmlColumnDefinition -> element.columnIdentifier.text
-      is DbmlEnumDefinition -> "Enum" // Assuming Enum doesn't implement PsiNameIdentifierOwner yet
+      is DbmlPartialDefinition -> element.name ?: "Unnamed Partial"
+      is DbmlColumnDefinition -> element.identifier.text ?: "Column"
+      is DbmlEnumDefinition -> element.enumIdentifier?.text ?: "Enum"
+      is DbmlGroupDefinition -> element.identifier?.text ?: "Group"
       is DbmlProjectDefinition -> "Project"
       else -> ""
     }
