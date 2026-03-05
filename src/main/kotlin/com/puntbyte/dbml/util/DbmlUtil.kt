@@ -31,7 +31,6 @@ object DbmlUtil {
     ).toList()
   }
 
-
   // FAST: Get all tables by grabbing all keys from the index
   fun findTables(project: Project): List<DbmlTableDefinition> {
     val result = mutableListOf<DbmlTableDefinition>()
@@ -53,6 +52,7 @@ object DbmlUtil {
         )
       )
     }
+
     return result
   }
 
@@ -103,7 +103,7 @@ object DbmlUtil {
 
       for (entry in mapEntries) {
         if (entry.mapKey.text == "database_type") {
-          return entry.mapValue.text.replace("'", "").replace("\"", "").trim()
+          return entry.mapValue?.text?.replace("'", "")?.replace("\"", "")?.trim()
         }
       }
     }

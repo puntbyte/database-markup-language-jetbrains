@@ -20,66 +20,56 @@ class DbmlUnresolvedReferenceInspection : LocalInspectionTool() {
     return object : DbmlVisitor() {
 
       // ==========================================
-      // 1. SIMPLE COLUMN REFERENCES
-      // e.g. `users.id` or `public.users.id`
+      // 1. SIMPLE COLUMN REFERENCES (`users.id` or `public.users.id`)
       // ==========================================
       override fun visitSimpleColumnReference(o: DbmlSimpleColumnReference) {
         super.visitSimpleColumnReference(o)
 
-        val tableId = o.tableIdentifier ?: return
-        val columnId = o.columnIdentifier ?: return
+        val ids = o.identifierList
+        if (ids.size < 2) return
 
-        // SchemaIdentifier includes the DOT (e.g., "public.") based on your new BNF
-        val schemaText = o.schemaIdentifier?.text ?: ""
-        val fullTableName = schemaText + tableId.text
+        val fullTableName = if (ids.size == 3) "${ids[0].text}.${ids[1].text}" else ids[0].text
+        val columnId = ids.last()
+        val tableNodeToHighlight = if (ids.size == 3) ids[1] else ids[0]
 
-        checkTableAndColumn(o, tableId, columnId, fullTableName, holder)
+        checkTableAndColumn(o, tableNodeToHighlight, columnId, fullTableName, holder)
       }
 
       // ==========================================
-      // 2. COMPOSITE COLUMN REFERENCES
-      // e.g. `users.(id, status)`
+      // 2. COMPOSITE COLUMN REFERENCES (`users.(id, status)`)
       // ==========================================
       override fun visitCompositeColumnReference(o: DbmlCompositeColumnReference) {
         super.visitCompositeColumnReference(o)
 
-        val tableId = o.tableIdentifier ?: return
+        val ids = o.identifierList
+        if (ids.isEmpty()) return
+
+        val fullTableName = if (ids.size == 2) "${ids[0].text}.${ids[1].text}" else ids[0].text
+        val tableNodeToHighlight = if (ids.size == 2) ids[1] else ids[0]
+
         val compositeColumn = o.compositeColumn ?: return
 
-        val schemaText = o.schemaIdentifier?.text ?: ""
-        val fullTableName = schemaText + tableId.text
-
-        // Loop through every column inside the parentheses (id, status)
-        for (columnId in compositeColumn.columnIdentifierList) {
-          checkTableAndColumn(o, tableId, columnId, fullTableName, holder)
+        for (columnId in compositeColumn.identifierList) {
+          checkTableAndColumn(o, tableNodeToHighlight, columnId, fullTableName, holder)
         }
       }
 
       // ==========================================
       // 3. ENUMS & CUSTOM TYPES
-      // e.g. `status enum_status`
       // ==========================================
       override fun visitDataType(o: DbmlDataType) {
         super.visitDataType(o)
         val typeName = o.text
-
         val dbType = DbmlUtil.getProjectDatabaseType(o.project)
         val standardTypes = DbmlDialects.getDataTypes(dbType)
 
-        // If it's not a standard DB type, it MUST be an Enum or Custom Type
         if (!standardTypes.contains(typeName.lowercase())) {
           val enums = DbmlUtil.findEnums(o.project)
-
-          val enumExists = enums.any { enumDef ->
-            val schema = enumDef.schemaIdentifier?.text ?: ""
-            val name = enumDef.enumIdentifier?.text ?: ""
-            val fullEnumName = schema + name
-            fullEnumName == typeName
-          }
+          val enumExists = enums.any { it.enumIdentifier?.text == typeName }
 
           if (!enumExists) {
             holder.registerProblem(
-              o, // Red squiggly line on the DataType text
+              o,
               "Unresolved enum or custom type: '$typeName'",
               ProblemHighlightType.GENERIC_ERROR,
               DbmlCreateEnumQuickFix(typeName)
@@ -90,20 +80,16 @@ class DbmlUnresolvedReferenceInspection : LocalInspectionTool() {
 
       // ==========================================
       // 4. PARTIAL REFERENCES
-      // e.g. `~ my_partial`
       // ==========================================
       override fun visitPartialReference(o: DbmlPartialReference) {
         super.visitPartialReference(o)
-
         val partialIdNode = o.partialIdentifier ?: return
         val partialName = partialIdNode.text
 
         val partials = DbmlUtil.findPartials(o.project)
-        val exists = partials.any { it.name == partialName }
-
-        if (!exists) {
+        if (partials.none { it.name == partialName }) {
           holder.registerProblem(
-            partialIdNode, // Red squiggly line on the partial name
+            partialIdNode,
             "Unresolved partial: '$partialName'",
             ProblemHighlightType.GENERIC_ERROR,
             DbmlCreatePartialQuickFix(partialName)
@@ -113,13 +99,10 @@ class DbmlUnresolvedReferenceInspection : LocalInspectionTool() {
     }
   }
 
-  /**
-   * Core validation logic for tables and columns
-   */
   private fun checkTableAndColumn(
-    referenceNode: PsiElement, // The ColumnReference wrapper
-    tableNodeToHighlight: DbmlTableIdentifier,
-    columnNodeToHighlight: DbmlColumnIdentifier,
+    referenceNode: PsiElement,
+    tableNodeToHighlight: DbmlIdentifier,
+    columnNodeToHighlight: DbmlIdentifier,
     fullTableName: String,
     holder: ProblemsHolder
   ) {
@@ -127,7 +110,6 @@ class DbmlUnresolvedReferenceInspection : LocalInspectionTool() {
     val inferredType = inferTypeFromOppositeEndpoint(referenceNode) ?: "int"
 
     if (tables.isEmpty()) {
-      // TABLE IS MISSING -> Red Squiggly on the Table name
       holder.registerProblem(
         tableNodeToHighlight,
         "Unresolved table: '$fullTableName'",
@@ -135,14 +117,15 @@ class DbmlUnresolvedReferenceInspection : LocalInspectionTool() {
         DbmlCreateTableQuickFix(fullTableName, columnNodeToHighlight.text, inferredType)
       )
     } else {
-      // TABLE EXISTS. Now check if the COLUMN exists inside it!
       val table = tables.first()
       val columns =
         PsiTreeUtil.getChildrenOfTypeAsList(table.tableBlock, DbmlColumnDefinition::class.java)
-      val columnExists = columns.any { it.columnIdentifier.text == columnNodeToHighlight.text }
+
+      // Check if ANY column has the matching name
+      val columnExists = columns.any { it.identifier.text == columnNodeToHighlight.text }
+
 
       if (!columnExists) {
-        // COLUMN IS MISSING -> Red Squiggly on the Column name
         holder.registerProblem(
           columnNodeToHighlight,
           "Unresolved column: '${columnNodeToHighlight.text}' in table '$fullTableName'",
@@ -153,34 +136,27 @@ class DbmlUnresolvedReferenceInspection : LocalInspectionTool() {
     }
   }
 
-  /**
-   * Analyzes the other side of the `Ref: A > B` to guess the data type for Quick Fix generation.
-   */
   private fun inferTypeFromOppositeEndpoint(currentRef: PsiElement): String? {
-    // Find the full ReferenceExpression (A > B)
     val refExpr =
       PsiTreeUtil.getParentOfType(currentRef, DbmlReferenceExpression::class.java) ?: return null
-
     val endpoints = refExpr.columnReferenceList
     if (endpoints.size != 2) return null
 
-    // Determine which side is the "other" side
     val oppositeEndpoint = if (endpoints[0] == currentRef) endpoints[1] else endpoints[0]
-
-    // Only infer from SimpleColumnReferences for simplicity
     val simpleRef = oppositeEndpoint.simpleColumnReference ?: return null
 
-    val schemaText = simpleRef.schemaIdentifier?.text ?: ""
-    val fullTableName = schemaText + (simpleRef.tableIdentifier?.text ?: return null)
-    val colName = simpleRef.columnIdentifier?.text ?: return null
+    val ids = simpleRef.identifierList
+    if (ids.size < 2) return null
 
-    // Lookup the table and column type
+    val fullTableName = if (ids.size == 3) "${ids[0].text}.${ids[1].text}" else ids[0].text
+    val colName = ids.last().text
+
     val tables = DbmlUtil.findTableByName(currentRef.project, fullTableName)
     val table = tables.firstOrNull() ?: return null
     val columns =
       PsiTreeUtil.getChildrenOfTypeAsList(table.tableBlock, DbmlColumnDefinition::class.java)
 
-    val colDef = columns.find { it.columnIdentifier.text == colName }
+    val colDef = columns.find { it.identifier.text == colName }
     return colDef?.columnType?.text
   }
 }

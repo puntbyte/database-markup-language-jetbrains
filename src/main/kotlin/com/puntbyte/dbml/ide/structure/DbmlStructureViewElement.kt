@@ -11,8 +11,7 @@ import com.puntbyte.dbml.core.DbmlIcon
 import com.puntbyte.dbml.psi.*
 import javax.swing.Icon
 
-class DbmlStructureViewElement(private val element: PsiElement) : StructureViewTreeElement,
-  SortableTreeElement {
+class DbmlStructureViewElement(private val element: PsiElement) : StructureViewTreeElement, SortableTreeElement {
 
   override fun getValue(): Any = element
 
@@ -22,14 +21,17 @@ class DbmlStructureViewElement(private val element: PsiElement) : StructureViewT
         return when (element) {
           is PsiFile -> element.name
           is DbmlTableDefinition -> element.name
-          is DbmlColumnDefinition -> element.columnIdentifier.text + " " + element.columnType.text
+          is DbmlPartialDefinition -> element.name
+          is DbmlEnumDefinition -> element.enumIdentifier?.text ?: "Unnamed Enum"
+          is DbmlColumnDefinition -> {
+            val name = element.identifier.text ?: "Unnamed Column"
+            val type = element.columnType?.text ?: ""
+            "$name $type".trim()
+          }
           else -> element.text
         }
       }
-
-      override fun getIcon(unused: Boolean): Icon =
-        DbmlIcon.File // Use specific icons if you have them!
-
+      override fun getIcon(unused: Boolean): Icon = DbmlIcon.File
       override fun getLocationString(): String? = null
     }
   }
@@ -39,30 +41,19 @@ class DbmlStructureViewElement(private val element: PsiElement) : StructureViewT
 
     when (element) {
       is DbmlFile -> {
-        // Root file: show tables, enums, etc.
-        childrenElements.addAll(
-          PsiTreeUtil.getChildrenOfTypeAsList(
-            element,
-            DbmlTableDefinition::class.java
-          )
-        )
-        childrenElements.addAll(
-          PsiTreeUtil.getChildrenOfTypeAsList(
-            element,
-            DbmlEnumDefinition::class.java
-          )
-        )
+        childrenElements.addAll(PsiTreeUtil.getChildrenOfTypeAsList(element, DbmlProjectDefinition::class.java))
+        childrenElements.addAll(PsiTreeUtil.getChildrenOfTypeAsList(element, DbmlTableDefinition::class.java))
+        childrenElements.addAll(PsiTreeUtil.getChildrenOfTypeAsList(element, DbmlEnumDefinition::class.java))
+        childrenElements.addAll(PsiTreeUtil.getChildrenOfTypeAsList(element, DbmlPartialDefinition::class.java))
+        childrenElements.addAll(PsiTreeUtil.getChildrenOfTypeAsList(element, DbmlGroupDefinition::class.java))
       }
-
       is DbmlTableDefinition -> {
-        // Inside a table: show columns
         val block = element.tableBlock
-        childrenElements.addAll(
-          PsiTreeUtil.getChildrenOfTypeAsList(
-            block,
-            DbmlColumnDefinition::class.java
-          )
-        )
+        childrenElements.addAll(PsiTreeUtil.getChildrenOfTypeAsList(block, DbmlColumnDefinition::class.java))
+      }
+      is DbmlPartialDefinition -> {
+        val block = element.partialBlock
+        childrenElements.addAll(PsiTreeUtil.getChildrenOfTypeAsList(block, DbmlColumnDefinition::class.java))
       }
     }
 
@@ -73,11 +64,7 @@ class DbmlStructureViewElement(private val element: PsiElement) : StructureViewT
     (element as? com.intellij.pom.Navigatable)?.navigate(requestFocus)
   }
 
-  override fun canNavigate(): Boolean =
-    (element as? com.intellij.pom.Navigatable)?.canNavigate() == true
-
-  override fun canNavigateToSource(): Boolean =
-    (element as? com.intellij.pom.Navigatable)?.canNavigateToSource() == true
-
+  override fun canNavigate(): Boolean = (element as? com.intellij.pom.Navigatable)?.canNavigate() == true
+  override fun canNavigateToSource(): Boolean = (element as? com.intellij.pom.Navigatable)?.canNavigateToSource() == true
   override fun getAlphaSortKey(): String = presentation.presentableText ?: ""
 }
